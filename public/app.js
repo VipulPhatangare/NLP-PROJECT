@@ -592,6 +592,27 @@ function displayPhase2Results() {
         console.error('Failed to set Phase 2 top language:', e);
     }
     
+    // Display Sentiment Analysis
+    if (data.overall_sentiment) {
+        displayOverallSentiment(data.overall_sentiment);
+    }
+    
+    if (data.sentiment_lexicon) {
+        displaySentimentChart('vaderSentimentChart', 'VADER Sentiment', data.sentiment_lexicon.sentiment_distribution);
+    }
+    
+    if (data.sentiment_lstm) {
+        displaySentimentChart('lstmSentimentChart', 'LSTM Sentiment', data.sentiment_lstm.sentiment_distribution);
+    }
+    
+    if (data.sentiment_lexicon && data.sentiment_lstm) {
+        displaySentimentDetails(data.sentiment_lexicon, data.sentiment_lstm);
+    }
+    
+    if (data.key_sentiment_phrases) {
+        displayKeyPhrases(data.key_sentiment_phrases);
+    }
+    
     // POS Chart
     if (data.pos_analysis && data.pos_analysis.pos_distribution) {
         const posData = data.pos_analysis.pos_distribution.slice(0, 15);
@@ -697,6 +718,134 @@ function displayWord2Vec(similarities) {
     
     html += '</div>';
     document.getElementById('word2vecContainer').innerHTML = html;
+}
+
+// Sentiment Analysis Display Functions
+function displayOverallSentiment(sentiment) {
+    const verdictClass = sentiment.verdict === 'Positive' ? 'positive' : (sentiment.verdict === 'Negative' ? 'negative' : 'neutral');
+    
+    const html = `
+        <div class="overall-sentiment-card ${verdictClass}">
+            <div class="sentiment-verdict">
+                <h3>Overall Verdict: ${sentiment.verdict}</h3>
+                <p class="sentiment-score">Score: ${sentiment.overall_score.toFixed(3)}</p>
+            </div>
+            <div class="sentiment-breakdown">
+                <div class="sentiment-bar-container">
+                    <div class="sentiment-label">Positive</div>
+                    <div class="sentiment-bar-bg">
+                        <div class="sentiment-bar positive-bar" style="width: ${sentiment.positive_percentage}%">
+                            ${sentiment.positive_percentage}%
+                        </div>
+                    </div>
+                </div>
+                <div class="sentiment-bar-container">
+                    <div class="sentiment-label">Neutral</div>
+                    <div class="sentiment-bar-bg">
+                        <div class="sentiment-bar neutral-bar" style="width: ${sentiment.neutral_percentage}%">
+                            ${sentiment.neutral_percentage}%
+                        </div>
+                    </div>
+                </div>
+                <div class="sentiment-bar-container">
+                    <div class="sentiment-label">Negative</div>
+                    <div class="sentiment-bar-bg">
+                        <div class="sentiment-bar negative-bar" style="width: ${sentiment.negative_percentage}%">
+                            ${sentiment.negative_percentage}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('overallSentiment').innerHTML = html;
+}
+
+function displaySentimentChart(canvasId, title, distribution) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    
+    const colors = {
+        'positive': 'rgba(16, 185, 129, 0.8)',
+        'neutral': 'rgba(107, 114, 128, 0.8)',
+        'negative': 'rgba(239, 68, 68, 0.8)'
+    };
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(distribution).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+            datasets: [{
+                data: Object.values(distribution),
+                backgroundColor: Object.keys(distribution).map(k => colors[k]),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: title
+                }
+            }
+        }
+    });
+}
+
+function displaySentimentDetails(vader, lstm) {
+    const html = `
+        <div class="sentiment-methods">
+            <div class="method-card">
+                <h4>📖 VADER (Lexicon-based)</h4>
+                <p class="method-name">${vader.method}</p>
+                <div class="method-stats">
+                    <div><strong>Avg Compound:</strong> ${vader.average_scores.avg_compound.toFixed(3)}</div>
+                    <div><strong>Avg Positive:</strong> ${vader.average_scores.avg_positive.toFixed(3)}</div>
+                    <div><strong>Avg Negative:</strong> ${vader.average_scores.avg_negative.toFixed(3)}</div>
+                </div>
+            </div>
+            <div class="method-card">
+                <h4>🧠 LSTM (Deep Learning)</h4>
+                <p class="method-name">${lstm.method}</p>
+                <div class="method-stats">
+                    <div><strong>Architecture:</strong> ${lstm.architecture}</div>
+                    <div><strong>Training Accuracy:</strong> ${(lstm.final_accuracy * 100).toFixed(2)}%</div>
+                    <div><strong>Validation Accuracy:</strong> ${(lstm.final_val_accuracy * 100).toFixed(2)}%</div>
+                    <div><strong>Avg Confidence:</strong> ${(lstm.avg_confidence * 100).toFixed(2)}%</div>
+                    <div><strong>Agreement with VADER:</strong> ${(lstm.agreement_with_vader * 100).toFixed(2)}%</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('sentimentDetails').innerHTML = html;
+}
+
+function displayKeyPhrases(phrases) {
+    const positiveHtml = phrases.most_positive_phrases.map((phrase, idx) => `
+        <div class="phrase-card positive-phrase">
+            <div class="phrase-rank">#${idx + 1}</div>
+            <div class="phrase-text">${phrase.text}</div>
+            <div class="phrase-score">Score: ${phrase.score.toFixed(3)}</div>
+        </div>
+    `).join('');
+    
+    const negativeHtml = phrases.most_negative_phrases.map((phrase, idx) => `
+        <div class="phrase-card negative-phrase">
+            <div class="phrase-rank">#${idx + 1}</div>
+            <div class="phrase-text">${phrase.text}</div>
+            <div class="phrase-score">Score: ${phrase.score.toFixed(3)}</div>
+        </div>
+    `).join('');
+    
+    document.getElementById('positivePhrases').innerHTML = positiveHtml;
+    document.getElementById('negativePhrases').innerHTML = negativeHtml;
 }
 
 function updateOverview() {

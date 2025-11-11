@@ -1,26 +1,30 @@
 {
-  "total_reviews": 93,
-  "initial_reviews": 100,
-  "reviews_removed": 7,
+  "total_reviews": 265,
+  "initial_reviews": 300,
+  "reviews_removed": 35,
   "languages": {
-    "en": 81,
-    "so": 7,
-    "ro": 3,
-    "de": 1,
-    "af": 1,
-    "id": 1,
-    "sl": 1,
-    "fr": 1,
+    "en": 243,
+    "so": 13,
+    "ro": 12,
+    "ca": 5,
+    "af": 4,
+    "de": 3,
+    "sl": 3,
+    "id": 3,
+    "tl": 3,
+    "fr": 2,
+    "cs": 2,
+    "it": 2,
+    "pl": 2,
     "nl": 1,
-    "cs": 1,
-    "ca": 1,
-    "tl": 1
+    "da": 1,
+    "sv": 1
   },
   "preprocessing_steps": [
     {
       "step": "Emoji Replacement",
       "description": "Converted emojis to text representations",
-      "stats": "117 emojis replaced",
+      "stats": "217 emojis replaced",
       "technique": "Dictionary mapping (EMOJI_MAP)",
       "example_before": "Awesome bass 😍 very satisfying sound. I love this headphone ❤. And this color is",
       "example_after": "Awesome bass  love  very satisfying sound. I love this headphone  . And this col"
@@ -36,7 +40,7 @@
     {
       "step": "Language Identification",
       "description": "Detected language of each review using langdetect",
-      "stats": "12 languages found: en(81), so(7), ro(3), de(1), af(1)",
+      "stats": "16 languages found: en(243), so(13), ro(12), ca(5), af(4)",
       "technique": "Language detection using character n-grams (langdetect library)",
       "example_before": "GoodREAD MORE",
       "example_after": "Detected as: so"
@@ -44,7 +48,7 @@
     {
       "step": "Translation",
       "description": "Translated non-English reviews to English",
-      "stats": "19 reviews translated",
+      "stats": "57 reviews translated",
       "technique": "Google Translator API (deep_translator)",
       "example_before": "GoodREAD MORE",
       "example_after": "GoodREAD MORE"
@@ -60,7 +64,7 @@
     {
       "step": "Tokenization & Stop Word Removal",
       "description": "Split text into tokens and removed common stop words",
-      "stats": "Average 14.2 tokens per review after stop word removal",
+      "stats": "Average 12.0 tokens per review after stop word removal",
       "technique": "NLTK word_tokenize + English stop words corpus",
       "example_before": "awesome bass love very satisfying sound. i love this headphone . and this color is wonderful love re",
       "example_after": "awesome bass love satisfying sound . love headphone . color wonderful love read"
@@ -76,13 +80,13 @@
     {
       "step": "Deduplication",
       "description": "Removed duplicate and empty reviews",
-      "stats": "7 duplicates removed",
+      "stats": "35 duplicates removed",
       "technique": "Exact match on processed text",
       "example_before": "goodread",
       "example_after": "Removed duplicate entries, kept unique reviews only"
     }
   ],
-  "avg_review_length": 15,
+  "avg_review_length": 13,
   "sample_reviews": [
     {
       "Review": "Awesome bass love very satisfying sound. I love this headphone . And this color is wonderful love READ MORE",

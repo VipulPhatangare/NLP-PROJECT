@@ -62,9 +62,9 @@ async def scrape_flipkart_reviews():
         "itm575777beb2c09?pid=ACCGYUVXVVMZJRHF&lid=LSTACCGYUVXVVMZJRHFNV55IR"
         "&marketplace=FLIPKART&page="
     )
-    total_pages = 10
+    total_pages = 60
     batch_size = 10
-    delay_between_batches = 40
+    delay_between_batches = 80
     all_data = []
     
     print(f"PROGRESS|Starting scraper: {total_pages} pages in {total_pages//batch_size} batches", flush=True)
