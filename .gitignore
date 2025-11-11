@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+
+# Data files
+*.csv
+!sample_data.csv
+
+# Results
+results/
+outputs/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

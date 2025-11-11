@@ -1,0 +1,24 @@
+# Web Scraping
+requests-html
+beautifulsoup4
+lxml
+lxml_html_clean
+nest-asyncio
+
+# Translation & Language Detection
+deep-translator
+langdetect
+emoji
+
+# NLP Core
+nltk
+gensim
+
+# Machine Learning & Analysis
+scikit-learn
+numpy
+pandas
+
+# Visualization & Utils
+matplotlib
+seaborn

@@ -1,0 +1,106 @@
+{
+  "total_reviews": 93,
+  "initial_reviews": 100,
+  "reviews_removed": 7,
+  "languages": {
+    "en": 81,
+    "so": 7,
+    "ro": 3,
+    "de": 1,
+    "af": 1,
+    "id": 1,
+    "sl": 1,
+    "fr": 1,
+    "nl": 1,
+    "cs": 1,
+    "ca": 1,
+    "tl": 1
+  },
+  "preprocessing_steps": [
+    {
+      "step": "Emoji Replacement",
+      "description": "Converted emojis to text representations",
+      "stats": "117 emojis replaced",
+      "technique": "Dictionary mapping (EMOJI_MAP)",
+      "example_before": "Awesome bass 😍 very satisfying sound. I love this headphone ❤. And this color is",
+      "example_after": "Awesome bass  love  very satisfying sound. I love this headphone  . And this col"
+    },
+    {
+      "step": "Artifact Removal",
+      "description": "Removed 'READ MORE' and normalized whitespace",
+      "stats": "Cleaned pagination artifacts",
+      "technique": "Regex-based pattern matching",
+      "example_before": "Awesome bass  love  very satisfying sound. I love this headphone  . And this color is wonderful  lov",
+      "example_after": "Great sound quality"
+    },
+    {
+      "step": "Language Identification",
+      "description": "Detected language of each review using langdetect",
+      "stats": "12 languages found: en(81), so(7), ro(3), de(1), af(1)",
+      "technique": "Language detection using character n-grams (langdetect library)",
+      "example_before": "GoodREAD MORE",
+      "example_after": "Detected as: so"
+    },
+    {
+      "step": "Translation",
+      "description": "Translated non-English reviews to English",
+      "stats": "19 reviews translated",
+      "technique": "Google Translator API (deep_translator)",
+      "example_before": "GoodREAD MORE",
+      "example_after": "GoodREAD MORE"
+    },
+    {
+      "step": "Text Cleaning & Normalization",
+      "description": "Removed HTML tags, URLs, special characters; converted to lowercase",
+      "stats": "Applied BeautifulSoup parsing + regex cleaning",
+      "technique": "HTML parsing (BeautifulSoup) + Regex + Case normalization",
+      "example_before": "Awesome bass love very satisfying sound. I love this headphone . And this color is wonderful love RE",
+      "example_after": "awesome bass love very satisfying sound. i love this headphone . and this color is wonderful love re"
+    },
+    {
+      "step": "Tokenization & Stop Word Removal",
+      "description": "Split text into tokens and removed common stop words",
+      "stats": "Average 14.2 tokens per review after stop word removal",
+      "technique": "NLTK word_tokenize + English stop words corpus",
+      "example_before": "awesome bass love very satisfying sound. i love this headphone . and this color is wonderful love re",
+      "example_after": "awesome bass love satisfying sound . love headphone . color wonderful love read"
+    },
+    {
+      "step": "Lemmatization",
+      "description": "Reduced words to their base/dictionary form",
+      "stats": "Applied WordNet lemmatizer to all tokens",
+      "technique": "NLTK WordNetLemmatizer (chosen over stemming for accuracy)",
+      "example_before": "products are working nicely with better sounds",
+      "example_after": "product working nicely better sound"
+    },
+    {
+      "step": "Deduplication",
+      "description": "Removed duplicate and empty reviews",
+      "stats": "7 duplicates removed",
+      "technique": "Exact match on processed text",
+      "example_before": "goodread",
+      "example_after": "Removed duplicate entries, kept unique reviews only"
+    }
+  ],
+  "avg_review_length": 15,
+  "sample_reviews": [
+    {
+      "Review": "Awesome bass love very satisfying sound. I love this headphone . And this color is wonderful love READ MORE",
+      "language": "en",
+      "Translated_Review": "Awesome bass love very satisfying sound. I love this headphone . And this color is wonderful love READ MORE",
+      "Processed_Review": "awesome bass love satisfying sound . love headphone . color wonderful love read"
+    },
+    {
+      "Review": "GoodREAD MORE",
+      "language": "so",
+      "Translated_Review": "GoodREAD MORE",
+      "Processed_Review": "goodread"
+    },
+    {
+      "Review": "On time delivery.. Good headphone at this budget..... Long life battery backup.....READ MORE",
+      "language": "en",
+      "Translated_Review": "On time delivery.. Good headphone at this budget..... Long life battery backup.....READ MORE",
+      "Processed_Review": "time delivery .. good headphone budget ..... long life battery backup ..... read"
+    }
+  ]
+}

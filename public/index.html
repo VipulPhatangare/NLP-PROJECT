@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLP Review Analysis Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Toast Container -->
+        <div id="toastContainer" class="toast-container"></div>
+        
+        <!-- Header -->
+        <header class="header">
+            <h1>🎯 NLP Product Review Analysis</h1>
+            <p class="subtitle">Comprehensive Customer Insights Dashboard</p>
+            <div class="author">By Vipul Phatangare</div>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="status-bar" id="statusBar">
+            <div class="status-item" id="statusRaw">
+                <span class="status-icon">📄</span>
+                <span>Raw Data</span>
+                <span class="badge badge-pending">Pending</span>
+            </div>
+            <div class="status-item" id="statusPhase1">
+                <span class="status-icon">🧹</span>
+                <span>Phase 1</span>
+                <span class="badge badge-pending">Pending</span>
+            </div>
+            <div class="status-item" id="statusPhase2">
+                <span class="status-icon">📊</span>
+                <span>Phase 2</span>
+                <span class="badge badge-pending">Pending</span>
+            </div>
+            <div class="status-item" id="statusPhase3">
+                <span class="status-icon">🎯</span>
+                <span>Phase 3</span>
+                <span class="badge badge-pending">Pending</span>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h2>🎮 Control Panel</h2>
+            <div class="controls-grid">
+                <div class="control-group">
+                    <button class="btn btn-primary" id="btnScrape" onclick="startScraping()">
+                        <span class="btn-icon">🕷️</span>
+                        Scrape Reviews
+                    </button>
+                    <small>Extract reviews from Flipkart</small>
+                </div>
+                <div class="control-group">
+                    <button class="btn btn-primary" id="btnPhase1" onclick="runPhase1()">
+                        <span class="btn-icon">🧹</span>
+                        Run Phase 1
+                    </button>
+                    <small>Preprocess & Clean Data</small>
+                </div>
+                <div class="control-group">
+                    <button class="btn btn-primary" id="btnPhase2" onclick="runPhase2()">
+                        <span class="btn-icon">📊</span>
+                        Run Phase 2
+                    </button>
+                    <small>Analyze & Extract Insights</small>
+                </div>
+                <div class="control-group">
+                    <button class="btn btn-primary" id="btnPhase3" onclick="runPhase3()">
+                        <span class="btn-icon">🎯</span>
+                        Run Phase 3
+                    </button>
+                    <small>Advanced Analysis & Q&A</small>
+                </div>
+                <div class="control-group">
+                    <button class="btn btn-secondary" id="btnViewData" onclick="viewAllData()">
+                        <span class="btn-icon">👁️</span>
+                        View All Data
+                    </button>
+                    <small>Display complete dataset</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p id="loadingText">Processing...</p>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs" id="tabsContainer" style="display: none;">
+            <button class="tab-btn active" onclick="showTab('overview')">📈 Overview</button>
+            <button class="tab-btn" onclick="showTab('phase1')">🧹 Phase 1</button>
+            <button class="tab-btn" onclick="showTab('phase2')">📊 Phase 2</button>
+            <button class="tab-btn" onclick="showTab('phase3')">🎯 Phase 3</button>
+            <button class="tab-btn" onclick="showTab('data')">📄 Data View</button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="tab-content">
+            <!-- Overview Tab -->
+            <div id="overviewTab" class="tab-pane active">
+                <h2>📈 Analysis Overview</h2>
+                <div class="stats-grid" id="overviewStats">
+                    <div class="stat-card" id="totalReviewsCard">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-value" id="totalReviews">-</div>
+                        <div class="stat-label">Total Reviews</div>
+                    </div>
+                    <div class="stat-card" id="languageCountCard">
+                        <div class="stat-icon">🌐</div>
+                        <div class="stat-value" id="languageCount">-</div>
+                        <div class="stat-label">Languages Detected</div>
+                    </div>
+                    <div class="stat-card" id="topicCountCard">
+                        <div class="stat-icon">📚</div>
+                        <div class="stat-value" id="topicCount">-</div>
+                        <div class="stat-label">Topics Found</div>
+                    </div>
+                    <div class="stat-card" id="vocabSizeCard">
+                        <div class="stat-icon">🔤</div>
+                        <div class="stat-value" id="vocabSize">-</div>
+                        <div class="stat-label">Vocabulary Size</div>
+                    </div>
+                    
+                    <!-- <div class="stat-card" id="topLanguageCard">
+                        <div class="stat-icon">🏆</div>
+                        <div class="stat-value" id="topLanguage">-</div>
+                        <div class="stat-label">Most Common Language</div>
+                    </div> -->
+                    <div class="stat-card" id="topFeatureCard">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-value" id="topFeature">-</div>
+                        <div class="stat-label">Top Mentioned Feature</div>
+                    </div>
+                    <div class="stat-card" id="uniqueEntitiesCard">
+                        <div class="stat-icon">🏷️</div>
+                        <div class="stat-value" id="uniqueEntities">-</div>
+                        <div class="stat-label">Unique Entities</div>
+                    </div>
+                </div>
+                
+                <!-- Language Details Card -->
+                <div class="section" id="languageDetailsSection" style="display: none;">
+                    <h3>🌍 Detected Languages</h3>
+                    <div class="language-tags" id="languageTags"></div>
+                </div>
+            </div>
+
+            <!-- Phase 1 Tab -->
+            <div id="phase1Tab" class="tab-pane">
+                <h2>🧹 Phase 1: Preprocessing Results</h2>
+                
+                <div class="section">
+                    <h3>📋 Preprocessing Pipeline Steps</h3>
+                    <div id="preprocessingSteps" class="steps-container"></div>
+                </div>
+                
+                <div class="section">
+                    <h3>🌐 Language Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="languageChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>📊 Processing Statistics</h3>
+                    <div class="stats-table" id="preprocessingStats"></div>
+                </div>
+
+                <div class="section">
+                    <h3>📝 Sample Transformations</h3>
+                    <div class="samples-container" id="sampleReviews"></div>
+                </div>
+            </div>
+
+            <!-- Phase 2 Tab -->
+            <div id="phase2Tab" class="tab-pane">
+                <h2>📊 Phase 2: Analysis Results</h2>
+                <div class="mini-stats">
+                    <div class="stat-inline">
+                        <strong>Top Language:</strong> <span id="phase2TopLanguage">-</span>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>😊 Sentiment Analysis</h3>
+                    <p class="section-subtitle">Lexicon-based (VADER) + Deep Learning (LSTM) approaches</p>
+                    
+                    <div id="overallSentiment"></div>
+                    
+                    <div class="two-column-grid" style="margin-top: 20px;">
+                        <div>
+                            <h4>VADER Sentiment Distribution</h4>
+                            <div class="chart-container">
+                                <canvas id="vaderSentimentChart"></canvas>
+                            </div>
+                        </div>
+                        <div>
+                            <h4>LSTM Sentiment Distribution</h4>
+                            <div class="chart-container">
+                                <canvas id="lstmSentimentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="sentimentDetails"></div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>Key Positive Phrases</h4>
+                        <div id="positivePhrases"></div>
+                        
+                        <h4 style="margin-top: 20px;">Key Negative Phrases</h4>
+                        <div id="negativePhrases"></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>🏷️ POS Tag Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="posChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>💬 Top Adjectives & Verbs</h3>
+                    <div class="two-column-grid">
+                        <div>
+                            <h4>Top Adjectives</h4>
+                            <div class="chart-container">
+                                <canvas id="adjectivesChart"></canvas>
+                            </div>
+                        </div>
+                        <div>
+                            <h4>Top Verbs</h4>
+                            <div class="chart-container">
+                                <canvas id="verbsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>🔍 Named Entity Recognition</h3>
+                    <div id="nerResults"></div>
+                </div>
+
+                <div class="section">
+                    <h3>📚 Topic Modeling (LSA)</h3>
+                    <div id="topicsContainer"></div>
+                </div>
+
+                <div class="section">
+                    <h3>🔤 Word2Vec Semantic Similarities</h3>
+                    <div id="word2vecContainer"></div>
+                </div>
+            </div>
+
+            <!-- Phase 3 Tab -->
+            <div id="phase3Tab" class="tab-pane">
+                <h2>🎯 Phase 3: Advanced Analysis & Application</h2>
+                
+                <div class="section">
+                    <h3>📋 Review Summarization</h3>
+                    <p class="section-subtitle">Representative reviews identified using TF-IDF + K-Means Clustering + Cosine Similarity</p>
+                    <div id="summarizationStats"></div>
+                    <div id="representativeReviews"></div>
+                </div>
+
+                <div class="section">
+                    <h3>❓ Question Answering (Data-Driven)</h3>
+                    <p class="section-subtitle">Insightful Q&A pairs synthesized from comprehensive review analysis</p>
+                    <div id="qaContainer"></div>
+                </div>
+
+                <div class="section">
+                    <h3>📊 Cluster Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="clusterChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data View Tab -->
+            <div id="dataTab" class="tab-pane">
+                <h2>📄 Complete Dataset View</h2>
+                <div class="data-controls">
+                    <select id="dataTypeSelect" onchange="loadSelectedData()">
+                        <option value="">Select Data Type</option>
+                        <option value="raw">Raw Data</option>
+                        <option value="cleaned">Cleaned Data</option>
+                    </select>
+                    <button class="btn btn-small" onclick="exportData()">📥 Export CSV</button>
+                </div>
+                <div class="table-container" id="dataTableContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
