@@ -22,3 +22,13 @@ pandas
 # Visualization & Utils
 matplotlib
 seaborn
+
+# RAG System Dependencies
+openai>=1.12.0
+google-generativeai>=0.3.0
+pinecone>=7.0.0
+python-dotenv>=1.0.0
+pypdf>=3.17.0
+tiktoken>=0.5.0
+flask>=3.0.0
+flask-cors>=4.0.0

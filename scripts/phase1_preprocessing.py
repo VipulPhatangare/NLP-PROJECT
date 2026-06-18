@@ -295,14 +295,20 @@ def preprocess_reviews(input_file, output_file):
     return stats
 
 if __name__ == "__main__":
-    input_file = sys.argv[1] if len(sys.argv) > 1 else "data/flipkart_boat_raw.csv"
-    output_file = sys.argv[2] if len(sys.argv) > 2 else "data/flipkart_boat_cleaned.csv"
-    
-    stats = preprocess_reviews(input_file, output_file)
-    
-    # Save stats to JSON file for later retrieval
-    stats_file = "data/phase1_stats.json"
-    with open(stats_file, 'w', encoding='utf-8') as f:
-        json.dump(stats, f, indent=2, ensure_ascii=False)
-    
-    print(json.dumps(stats, indent=2))
+    try:
+        input_file = sys.argv[1] if len(sys.argv) > 1 else "data/flipkart_boat_raw.csv"
+        output_file = sys.argv[2] if len(sys.argv) > 2 else "data/flipkart_boat_cleaned.csv"
+        
+        stats = preprocess_reviews(input_file, output_file)
+        
+        # Save stats to JSON file for later retrieval
+        stats_file = "data/phase1_stats.json"
+        with open(stats_file, 'w', encoding='utf-8') as f:
+            json.dump(stats, f, indent=2, ensure_ascii=False)
+        
+        # Print only a success message, not the full stats
+        print(json.dumps({"success": True, "message": "Phase 1 complete", "total_reviews": stats["total_reviews"]}, indent=2))
+        sys.exit(0)
+    except Exception as e:
+        print(json.dumps({"success": False, "error": str(e)}, indent=2))
+        sys.exit(1)

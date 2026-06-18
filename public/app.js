@@ -63,10 +63,15 @@ function updateStatValue(elementId, newValue) {
     }, 150);
 }
 
+// Chat Widget State
+let chatOpen = false;
+let ragIndexed = false;
+
 // Initialize on load
 document.addEventListener('DOMContentLoaded', () => {
     checkStatus();
     loadDynamicStats();
+    checkRAGStatus();
 });
 
 // API Functions
@@ -253,10 +258,66 @@ function updateStatusBadge(elementId, isComplete) {
         badge.className = 'badge badge-pending';
     }
 }
+// Show modal to select target review count
+function showReviewTargetModal() {
+    return new Promise((resolve) => {
+        // Create modal HTML
+        const modalHTML = `
+            <div class="modal-overlay" id="reviewTargetModal">
+                <div class="modal-content">
+                    <h3>🎯 Select Target Review Count</h3>
+                    <p style="color: #64748b; margin-bottom: 25px;">Choose how many reviews you want to collect</p>
+                    <div class="review-options">
+                        <button class="review-option-btn" onclick="selectReviewTarget(200)">
+                            <span class="option-icon">📊</span>
+                            <span class="option-number">200</span>
+                            <span class="option-label">Reviews</span>
+                            <small>Max 36 pages (3 batches)</small>
+                        </button>
+                        <button class="review-option-btn" onclick="selectReviewTarget(500)">
+                            <span class="option-icon">📈</span>
+                            <span class="option-number">500</span>
+                            <span class="option-label">Reviews</span>
+                            <small>Max 72 pages (6 batches)</small>
+                        </button>
+                    </div>
+                    <button class="btn btn-secondary" onclick="selectReviewTarget(null)" style="margin-top: 15px; width: 100%;">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Store resolve function globally so button can call it
+        window._reviewTargetResolve = resolve;
+    });
+}
+
+// Handle review target selection
+function selectReviewTarget(target) {
+    const modal = document.getElementById('reviewTargetModal');
+    if (modal) {
+        modal.remove();
+    }
+    if (window._reviewTargetResolve) {
+        window._reviewTargetResolve(target);
+        delete window._reviewTargetResolve;
+    }
+}
 
 // Scraping with real-time progress
 async function startScraping() {
     const btn = document.getElementById('btnScrape');
+    
+    // Show modal to select target review count
+    const targetReviews = await showReviewTargetModal();
+    if (!targetReviews) {
+        return; // User cancelled
+    }
+    
     btn.disabled = true;
     
     // Reset all statuses to pending
@@ -282,7 +343,7 @@ async function startScraping() {
     // Reset current data in memory
     currentData = { raw: null, cleaned: null, phase2: null };
     
-    showToast('Scraping Started', 'Initiating web scraper for Flipkart reviews', 'info');
+    showToast('Scraping Started', `Target: ${targetReviews} reviews`, 'info');
     
     // Show progress container
     const loadingDiv = document.getElementById('loading');
@@ -291,36 +352,73 @@ async function startScraping() {
         <div class="loading-content">
             <div class="progress-container">
                 <h3>🔍 Scraping Reviews from Flipkart</h3>
+                <div style="text-align: center; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 10px; border: 2px solid #0ea5e9;">
+                    <span style="font-size: 1.1rem; font-weight: 600; color: #0369a1;">🎯 Target: ${targetReviews} reviews</span>
+                </div>
                 <div class="progress-bar-container">
-                    <div class="progress-bar" id="scrapeProgressBar" style="width: 0%"></div>
+                    <div class="progress-bar animating" id="scrapeProgressBar" style="width: 0%; --actual-progress: 0%"></div>
                 </div>
                 <div class="progress-text">
                     <span id="scrapePercent">0%</span>
-                    <span id="scrapeReviews">0 reviews scraped</span>
+                    <span id="scrapeReviews">0 / ${targetReviews} reviews</span>
+                </div>
+                <div style="text-align: center; margin: 15px 0;">
+                    <span style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: linear-gradient(135deg, #e0f2fe, #bae6fd); border-radius: 20px; font-weight: 600; color: #0c4a6e;">
+                        <span style="font-size: 1.2rem;">⏱️</span>
+                        <span>Time Elapsed: <strong id="elapsedTime">00:00</strong></span>
+                    </span>
                 </div>
                 <p id="scrapeMessage">Initializing scraper...</p>
             </div>
         </div>
     `;
     
+    let elapsedInterval = null;
+    let startTime = Date.now();
+    
+    // Start elapsed time counter
+    elapsedInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        const elapsedTimeElement = document.getElementById('elapsedTime');
+        if (elapsedTimeElement) {
+            elapsedTimeElement.textContent = timeString;
+        }
+    }, 1000);
+    
+    // Calculate total pages based on target reviews
+    const totalPages = targetReviews === 200 ? 36 : 72;
+    const batchSize = 12;
+    const delay = 60;
+    
     try {
-        const eventSource = new EventSource(`${API_BASE}/scrape?totalPages=60&batchSize=15&delay=60`);
+        const eventSource = new EventSource(`${API_BASE}/scrape?targetReviews=${targetReviews}&totalPages=${totalPages}&batchSize=${batchSize}&delay=${delay}`);
         
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
             
             if (data.type === 'progress') {
-                // Update progress bar
+                // Update progress bar with animation
                 const percent = data.percent || 0;
                 const progressBar = document.getElementById('scrapeProgressBar');
+                
+                // Set CSS variable for actual progress
+                progressBar.style.setProperty('--actual-progress', percent + '%');
                 progressBar.style.width = percent + '%';
                 progressBar.textContent = percent + '%';
+                
+                // Add animating class if not already present
+                if (!progressBar.classList.contains('animating')) {
+                    progressBar.classList.add('animating');
+                }
                 
                 document.getElementById('scrapePercent').textContent = percent + '%';
                 
                 // Parse review count - handle different formats
                 const reviewCount = data.reviews ? data.reviews.replace(' reviews', '') : '0';
-                document.getElementById('scrapeReviews').textContent = reviewCount + ' reviews scraped';
+                document.getElementById('scrapeReviews').textContent = `${reviewCount} / ${targetReviews} reviews`;
                 document.getElementById('scrapeMessage').textContent = data.message || 'Processing...';
                 
                 // Show milestone toasts
@@ -330,15 +428,23 @@ async function startScraping() {
             } else if (data.type === 'info') {
                 document.getElementById('scrapeMessage').textContent = data.message;
             } else if (data.type === 'complete') {
+                // Clear elapsed timer
+                if (elapsedInterval) {
+                    clearInterval(elapsedInterval);
+                    elapsedInterval = null;
+                }
+                
                 const progressBar = document.getElementById('scrapeProgressBar');
+                progressBar.classList.remove('animating');
                 progressBar.style.width = '100%';
+                progressBar.style.setProperty('--actual-progress', '100%');
                 progressBar.textContent = '100%';
                 
                 document.getElementById('scrapePercent').textContent = '100%';
                 
                 // Parse review count - handle different formats
                 const reviewCount = data.reviews ? data.reviews.replace(' reviews', '') : (data.total || '0');
-                document.getElementById('scrapeReviews').textContent = reviewCount + ' reviews scraped';
+                document.getElementById('scrapeReviews').textContent = `${reviewCount} / ${targetReviews} reviews`;
                 document.getElementById('scrapeMessage').textContent = '✅ ' + data.message;
                 
                 setTimeout(async () => {
@@ -346,25 +452,48 @@ async function startScraping() {
                     hideLoading();
                     btn.disabled = false;
                     showToast('Scraping Complete!', `Successfully scraped ${reviewCount} reviews`, 'success');
-                    await checkStatus();
                     
-                    // Wait a bit for file to be written, then try to load
-                    setTimeout(async () => {
-                        await loadRawData();
-                    }, 1000);
+                    // Only update status badges without loading data
+                    try {
+                        const status = await apiCall('/status', 'GET', null, false);
+                        updateStatusBadge('statusRaw', status.rawData);
+                        updateStatusBadge('statusPhase1', status.cleanedData);
+                        updateStatusBadge('statusPhase2', status.phase2Results);
+                        updateStatusBadge('statusPhase3', status.phase3Results);
+                        
+                        // Auto-trigger RAG indexing after scraping
+                        showToast('🚀 Starting RAG Indexing', 'Preparing AI assistant with your reviews...', 'info');
+                        setTimeout(() => {
+                            indexReviewsForRAG();
+                        }, 2000);
+                    } catch (error) {
+                        console.error('Status update failed:', error);
+                    }
                 }, 2000);
             } else if (data.type === 'error') {
+                if (elapsedInterval) {
+                    clearInterval(elapsedInterval);
+                    elapsedInterval = null;
+                }
                 eventSource.close();
                 hideLoading();
                 btn.disabled = false;
                 showToast('Scraping Failed', data.message, 'error');
             } else if (data.type === 'done') {
+                if (elapsedInterval) {
+                    clearInterval(elapsedInterval);
+                    elapsedInterval = null;
+                }
                 eventSource.close();
             }
         };
         
         eventSource.onerror = (error) => {
             console.error('EventSource error:', error);
+            if (elapsedInterval) {
+                clearInterval(elapsedInterval);
+                elapsedInterval = null;
+            }
             eventSource.close();
             hideLoading();
             btn.disabled = false;
@@ -372,6 +501,10 @@ async function startScraping() {
         };
         
     } catch (error) {
+        if (elapsedInterval) {
+            clearInterval(elapsedInterval);
+            elapsedInterval = null;
+        }
         hideLoading();
         btn.disabled = false;
         showToast('Scraping Failed', error.message, 'error');
@@ -1204,4 +1337,259 @@ function exportData() {
     }
     
     window.open(`${API_BASE}/data/${type}`, '_blank');
+}
+
+// ========================================
+// AI CHAT ASSISTANT FUNCTIONS
+// ========================================
+
+// Check if RAG system is indexed and ready
+async function checkRAGStatus() {
+    try {
+        const response = await fetch('http://localhost:5000/api/rag/status');
+        const data = await response.json();
+        
+        if (data.indexed && data.total_vectors > 0) {
+            ragIndexed = true;
+            showChatWidget();
+        }
+    } catch (error) {
+        console.log('RAG system not ready yet');
+    }
+}
+
+// Show chat widget after successful indexing
+function showChatWidget() {
+    const chatWidget = document.getElementById('chatWidget');
+    const chatToggleBtn = document.getElementById('chatToggleBtn');
+    const chatBadge = document.getElementById('chatBadge');
+    
+    if (chatWidget && chatToggleBtn) {
+        chatToggleBtn.style.display = 'flex';
+        chatBadge.style.display = 'block';
+        
+        // Auto-open chat briefly to show it's available
+        setTimeout(() => {
+            chatWidget.style.display = 'flex';
+            chatOpen = true;
+            setTimeout(() => {
+                chatBadge.style.display = 'none';
+            }, 2000);
+        }, 1000);
+        
+        showToast('🤖 AI Assistant Ready!', 'Chat assistant is now available. Click the chat button to start asking questions!', 'success');
+    }
+}
+
+// Toggle chat window
+function toggleChat() {
+    const chatWidget = document.getElementById('chatWidget');
+    const chatToggleBtn = document.getElementById('chatToggleBtn');
+    const chatBadge = document.getElementById('chatBadge');
+    
+    chatOpen = !chatOpen;
+    
+    if (chatOpen) {
+        chatWidget.style.display = 'flex';
+        chatToggleBtn.classList.add('active');
+        chatBadge.style.display = 'none';
+        
+        // Focus on input
+        setTimeout(() => {
+            document.getElementById('chatInput').focus();
+        }, 300);
+    } else {
+        chatWidget.style.display = 'none';
+        chatToggleBtn.classList.remove('active');
+    }
+}
+
+// Send quick question
+function sendQuickQuestion(question) {
+    document.getElementById('chatInput').value = question;
+    sendMessage();
+}
+
+// Handle Enter key press
+function handleChatKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+}
+
+// Send chat message
+async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Clear input
+    input.value = '';
+    
+    // Add user message to chat
+    addMessageToChat('user', message);
+    
+    // Show typing indicator
+    const typingId = addTypingIndicator();
+    
+    // Disable send button
+    const sendBtn = document.getElementById('chatSendBtn');
+    sendBtn.disabled = true;
+    updateChatStatus('Thinking...');
+    
+    try {
+        // Call RAG API
+        const response = await fetch('http://localhost:5000/api/rag/query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ question: message })
+        });
+        
+        const data = await response.json();
+        
+        // Remove typing indicator
+        removeTypingIndicator(typingId);
+        
+        if (data.answer) {
+            // Add AI response to chat
+            addMessageToChat('ai', data.answer, {
+                sources: data.num_sources,
+                rating: data.average_rating_in_sources
+            });
+        } else {
+            addMessageToChat('ai', 'Sorry, I could not generate an answer. Please try again.');
+        }
+        
+    } catch (error) {
+        console.error('Chat error:', error);
+        removeTypingIndicator(typingId);
+        addMessageToChat('ai', 'Sorry, there was an error processing your question. Please make sure the RAG system is running.');
+    } finally {
+        sendBtn.disabled = false;
+        updateChatStatus('Ready');
+    }
+}
+
+// Add message to chat
+function addMessageToChat(type, text, metadata = null) {
+    const chatBody = document.getElementById('chatBody');
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${type}-message`;
+    
+    if (type === 'user') {
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">${escapeHtml(text)}</div>
+            </div>
+            <div class="message-avatar">👤</div>
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <div class="message-avatar">🤖</div>
+            <div class="message-content">
+                <div class="message-text">${escapeHtml(text)}</div>
+                ${metadata ? `
+                    <div class="message-metadata">
+                        <span>📊 Based on ${metadata.sources} reviews</span>
+                        ${metadata.rating ? `<span>⭐ Avg: ${metadata.rating.toFixed(1)}/5</span>` : ''}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+    
+    chatBody.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    chatBody.scrollTop = chatBody.scrollHeight;
+    
+    // Animate message
+    setTimeout(() => {
+        messageDiv.classList.add('show');
+    }, 100);
+}
+
+// Add typing indicator
+function addTypingIndicator() {
+    const chatBody = document.getElementById('chatBody');
+    const typingDiv = document.createElement('div');
+    const id = 'typing-' + Date.now();
+    typingDiv.id = id;
+    typingDiv.className = 'chat-message ai-message typing-indicator';
+    typingDiv.innerHTML = `
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+    
+    chatBody.appendChild(typingDiv);
+    chatBody.scrollTop = chatBody.scrollHeight;
+    
+    setTimeout(() => {
+        typingDiv.classList.add('show');
+    }, 100);
+    
+    return id;
+}
+
+// Remove typing indicator
+function removeTypingIndicator(id) {
+    const indicator = document.getElementById(id);
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+// Update chat status
+function updateChatStatus(status) {
+    const statusElement = document.getElementById('chatStatus');
+    if (statusElement) {
+        statusElement.textContent = status;
+    }
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Index reviews for RAG system
+async function indexReviewsForRAG() {
+    showLoading('Indexing reviews for AI Assistant... This may take a moment.');
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/rag/index', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        hideLoading();
+        
+        if (data.status === 'success') {
+            showToast('✅ AI Assistant Ready!', `Indexed ${data.total_chunks} review chunks. Chat is now available!`, 'success');
+            ragIndexed = true;
+            showChatWidget();
+        } else {
+            showToast('⚠️ Indexing Issue', data.message || 'Could not index reviews', 'warning');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('RAG indexing error:', error);
+        showToast('❌ Indexing Failed', 'Make sure the RAG API server is running on port 5000', 'error');
+    }
 }

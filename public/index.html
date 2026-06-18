@@ -301,6 +301,65 @@
         </div>
     </div>
 
+    <!-- AI Chat Assistant -->
+    <div id="chatWidget" class="chat-widget" style="display: none;">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-avatar">🤖</div>
+                <div class="chat-header-info">
+                    <div class="chat-title">AI Product Assistant</div>
+                    <div class="chat-status">
+                        <span class="status-indicator"></span>
+                        <span id="chatStatus">Ready</span>
+                    </div>
+                </div>
+            </div>
+            <button class="chat-minimize-btn" onclick="toggleChat()">─</button>
+        </div>
+        
+        <div class="chat-body" id="chatBody">
+            <div class="chat-welcome">
+                <div class="welcome-icon">👋</div>
+                <h3>Welcome to AI Product Assistant!</h3>
+                <p>Ask me anything about the product reviews. I'll give you concise answers based on actual customer feedback.</p>
+                <div class="quick-questions">
+                    <div class="quick-question-label">Try asking:</div>
+                    <button class="quick-question-btn" onclick="sendQuickQuestion('Sound quality kaisi hai?')">
+                        Sound quality kaisi hai?
+                    </button>
+                    <button class="quick-question-btn" onclick="sendQuickQuestion('How is the battery life?')">
+                        How is the battery life?
+                    </button>
+                    <button class="quick-question-btn" onclick="sendQuickQuestion('Product overall kaisa hai?')">
+                        Product overall kaisa hai?
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-footer">
+            <div class="chat-input-container">
+                <input 
+                    type="text" 
+                    id="chatInput" 
+                    class="chat-input" 
+                    placeholder="Ask about the product... (English or Hinglish)"
+                    onkeypress="handleChatKeyPress(event)"
+                />
+                <button class="chat-send-btn" onclick="sendMessage()" id="chatSendBtn">
+                    <span>➤</span>
+                </button>
+            </div>
+            <div class="chat-powered-by">Powered by OpenAI GPT-4o-mini</div>
+        </div>
+    </div>
+
+    <!-- Chat Toggle Button -->
+    <button id="chatToggleBtn" class="chat-toggle-btn" onclick="toggleChat()" style="display: none;">
+        <span class="chat-icon">💬</span>
+        <span class="chat-badge" id="chatBadge">1</span>
+    </button>
+
     <script src="app.js"></script>
 </body>
 </html>

@@ -10,17 +10,15 @@ Modify these settings as needed
 # Flipkart product URL components
 PRODUCT_URL = {
     "base": "https://www.flipkart.com/",
-    "product_path": "boat-450-pro-upto-70-hours-playback-bluetooth/product-reviews/",
-    "product_id": "itm575777beb2c09?pid=ACCGYUVXVVMZJRHF&lid=LSTACCGYUVXVVMZJRHFNV55IR&marketplace=FLIPKART"
+    "product_path": "jbl-c50hi-wired/product-reviews/",
+    "product_id": "itm7820dc2c9653e?pid=ACCFAMFQGCNEB8HM&lid=LSTACCFAMFQGCNEB8HMY6STV6&marketplace=FLIPKART"
 }
 
 # Scraping parameters
 SCRAPING = {
-    "total_pages": 60,          # Total number of pages to scrape
+    "total_pages": 30,          # Total number of pages to scrape
     "batch_size": 15,           # Pages per batch (to avoid rate limiting)
-    "delay_between_batches": 60, # Seconds to wait between batches
-    "render_timeout": 40,        # Timeout for page rendering
-    "render_sleep": 2            # Sleep after rendering
+    "delay_between_batches": 80 # Seconds to wait between batches
 }
 
 # CSS selectors for Flipkart
@@ -142,4 +140,42 @@ VISUALIZATION = {
     ],
     "max_chart_items": 15,  # Maximum items to display in charts
     "sample_reviews": 5     # Number of sample reviews to display
+}
+
+# ===========================
+# RAG SYSTEM CONFIGURATION
+# ===========================
+
+RAG = {
+    # Document Processing
+    "chunk_size": 300,              # Characters per chunk
+    "chunk_overlap": 50,            # Overlapping characters between chunks
+    
+    # OpenAI Embeddings
+    "embedding_model": "text-embedding-3-small",  # OpenAI model for embeddings
+    "embedding_dimension": 1536,    # Dimension of text-embedding-3-small
+    "embedding_batch_size": 100,    # Batch size for embedding generation
+    
+    # Pinecone Vector Store
+    "pinecone_index_name": "nlp-project",
+    "pinecone_metric": "cosine",    # Distance metric (cosine, euclidean, dotproduct)
+    "pinecone_batch_size": 100,     # Batch size for vector upload
+    
+    # LLM Configuration
+    "llm_provider": "openai",       # "openai" or "gemini"
+    "openai_model": "gpt-4o-mini",  # OpenAI model for answer generation (gpt-4o-mini, gpt-4o, gpt-3.5-turbo)
+    "gemini_model": "gemini-2.5-flash",  # Gemini model (fallback)
+    "temperature": 0.1,             # Lower = more deterministic, higher = more creative
+    "max_tokens": 1024,             # Maximum output tokens
+    
+    # Query Settings
+    "top_k_results": 5,             # Number of similar reviews to retrieve
+    "min_similarity_score": 0.7,    # Minimum similarity threshold
+    "include_citations": True,      # Include review citations in answers
+    
+    # System Prompts
+    "system_instruction": """You are a helpful AI assistant for analyzing product reviews. 
+Use ONLY the provided review context to answer questions. 
+If the context doesn't contain sufficient information, say "I don't have enough information in the reviews to answer that."
+Provide concise, clear, and well-cited responses."""
 }

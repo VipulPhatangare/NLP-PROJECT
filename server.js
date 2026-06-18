@@ -84,7 +84,7 @@ app.get('/api/status', async (req, res) => {
 // Scrape reviews with real-time progress
 app.get('/api/scrape', async (req, res) => {
     try {
-        const { totalPages = 60, batchSize = 15, delay = 60 } = req.query;
+        const { targetReviews = 200, totalPages = 45, batchSize = 15, delay = 80 } = req.query;
         
         // Set headers for SSE (Server-Sent Events)
         res.setHeader('Content-Type', 'text/event-stream');
@@ -93,8 +93,9 @@ app.get('/api/scrape', async (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
         
         console.log('Starting scraping with real-time progress...');
+        console.log(`Target: ${targetReviews} reviews, Max pages: ${totalPages}`);
         
-        const pythonProcess = spawn('python', ['scripts/scraper.py', totalPages, batchSize, delay]);
+        const pythonProcess = spawn('python', ['scripts/scraper.py', totalPages, batchSize, delay, targetReviews]);
         
         pythonProcess.stdout.on('data', (data) => {
             const output = data.toString();
@@ -114,6 +115,10 @@ app.get('/api/scrape', async (req, res) => {
                             message: parts[3] || parts[1]
                         };
                         res.write(`data: ${JSON.stringify(progress)}\n\n`);
+                        // Only log completion messages
+                        if (parts[3] && parts[3].includes('Completed batch')) {
+                            console.log(`✓ ${parts[3]}: ${parts[2]}`);
+                        }
                     } else if (type === 'SUCCESS') {
                         // Format: SUCCESS|100%|350 reviews|message
                         const success = {
@@ -123,8 +128,18 @@ app.get('/api/scrape', async (req, res) => {
                             message: parts[3] || 'Scraping complete!'
                         };
                         res.write(`data: ${JSON.stringify(success)}\n\n`);
-                    } else if (type === 'PROGRESS') {
-                        // Simple progress message
+                        console.log(`✓ Scraping Complete: ${parts[2]}`);
+                    } else if (type === 'PROGRESS' && line.includes('Waiting') && line.includes('seconds')) {
+                        // Don't send waiting event, just show info
+                        const message = parts.slice(1).join('|');
+                        const progress = {
+                            type: 'info',
+                            message: message
+                        };
+                        res.write(`data: ${JSON.stringify(progress)}\n\n`);
+                    } else if (type === 'PROGRESS' && (line.includes('Target reached') || line.includes('Starting scraper'))) {
+                        // Only log important messages
+                        console.log(`ℹ ${parts.slice(1).join('|')}`);
                         const progress = {
                             type: 'info',
                             message: parts.slice(1).join('|')
@@ -132,7 +147,6 @@ app.get('/api/scrape', async (req, res) => {
                         res.write(`data: ${JSON.stringify(progress)}\n\n`);
                     }
                 }
-                console.log(line);
             });
         });
         
@@ -164,8 +178,9 @@ app.get('/api/scrape', async (req, res) => {
 // Run Phase 1 preprocessing
 app.post('/api/phase1', async (req, res) => {
     try {
-        console.log('Starting Phase 1 preprocessing...');
+        console.log('▶ Phase 1 preprocessing started...');
         const result = await runPythonScript('phase1_preprocessing.py');
+        console.log('✓ Phase 1 Complete');
         
         res.json({
             success: true,
@@ -173,6 +188,7 @@ app.post('/api/phase1', async (req, res) => {
             data: result
         });
     } catch (error) {
+        console.log('✗ Phase 1 Failed:', error.message);
         res.status(500).json({
             success: false,
             error: error.message
@@ -183,8 +199,9 @@ app.post('/api/phase1', async (req, res) => {
 // Run Phase 2 analysis
 app.post('/api/phase2', async (req, res) => {
     try {
-        console.log('Starting Phase 2 analysis...');
+        console.log('▶ Phase 2 analysis started...');
         const result = await runPythonScript('phase2_analysis.py');
+        console.log('✓ Phase 2 Complete');
         
         res.json({
             success: true,
@@ -192,6 +209,7 @@ app.post('/api/phase2', async (req, res) => {
             data: result
         });
     } catch (error) {
+        console.log('✗ Phase 2 Failed:', error.message);
         res.status(500).json({
             success: false,
             error: error.message
@@ -202,8 +220,9 @@ app.post('/api/phase2', async (req, res) => {
 // Run Phase 3 analysis
 app.post('/api/phase3', async (req, res) => {
     try {
-        console.log('Starting Phase 3 advanced analysis...');
+        console.log('▶ Phase 3 advanced analysis started...');
         const result = await runPythonScript('phase3_advanced.py');
+        console.log('✓ Phase 3 Complete');
         
         res.json({
             success: true,
@@ -211,6 +230,7 @@ app.post('/api/phase3', async (req, res) => {
             data: result
         });
     } catch (error) {
+        console.log('✗ Phase 3 Failed:', error.message);
         res.status(500).json({
             success: false,
             error: error.message
